@@ -1,69 +1,201 @@
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium_stealth import stealth
+import pandas as pd
 
-link = "https://www.amazon.com.br/s?k=m%C3%A1quinas+%2B+de+%2B+lavar+%2B+e+%2B+secadoras&i=appliances&__mk_pt_BR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&qid=1715947464&rnid=16254006011&ref=sr_nr_p_36_0_0&low-price=290&high-price="
+# -----------------------------------------Customization Variables---------------------------------------------------
+
+url = "https://www.amazon.com.br"  # Where you want to scrape, change to us, uk, etc. sites to change locations!
+keywords = "Lavadora e Secadoraa de Roupas"  # The topic you want to scrape, Misspelling? Yes, I dunno why but this is the best results
+
+# Navigation classes
+class_search_bar = 'nav-input.nav-progressive-attribute'
+class_submit_btn = 'nav-search-submit-button'
+class_next_btn = 's-pagination-item.s-pagination-next.s-pagination-button.s-pagination-separator'
+class_go_page_1_btn = 's-pagination-item.s-pagination-button'
+
+# Filter Class
+class_range_lower_value = "a-section s-range-input-container s-lower-bound aok-relative"  # We want to change what's written on the valueText attribute
+
+# For each item
+class_itens = 's-result-item.s-asin'
+
+# URLs (they are analogs)
 class_urls = "a-link-normal.s-no-outline"
-class_model_description = "a-size-large.product-title-word-break"
-class_price = "a-price-whole"
+class_link = 'a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal'
+
+# Item classes
+att_img = 'data-image-source-density'  # search by tag name
 class_local_currency = "a-price-symbol"
-class_marketing_claims = "productDescription"
+class_price = "a-price-whole"
 class_5_Star = "a-icon-alt"
-machines=[{}]
 
-def get_links():
-    urls = []
-    driver = webdriver.Chrome()
+# For these ones we would need to be inside the products page (NOT COUNTING FOR DEMO)
+class_name = 'a-size-large.product-title-word-break'
+class_marketing_claims_div = "productDescription"
+class_model_description = "a-size-large.product-title-word-break"
+class_th = "a-color-secondary.a-size-base.prodDetSectionEntry"
+class_td = 'a-size-base.prodDetAttrValue'
 
+# Global Variables
+next_page = None
+product_link = []
+products_data = []
+
+# Driver Configuration
+chrome_options = Options()
+chrome_options.add_argument("--start-maximized")
+chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+chrome_options.add_argument("--disable-geolocation")
+chrome_options.add_argument("--disable-notifications")
+chrome_options.add_argument("--disable-popup-blocking")
+chrome_options.add_argument("--incognito")
+chrome_options.add_argument("--disable-extensions")
+
+driver = webdriver.Chrome(options=chrome_options)
+
+# Aplicar o selenium-stealth
+stealth(driver,
+        languages=["pt-BR", "pt"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True)
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+def scrape_page(driver):
+    '''
+    Gets all links from all objects in the website (it automatically changes the page)
+    '''
+    global product_link
+    global next_page
+
+    # wait until elements are found
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, class_itens)))
+
+    # get elements links
+    elements = driver.find_elements(By.CLASS_NAME, class_itens)
+    for element in elements:
+        item = element.find_element(By.CLASS_NAME, class_link)
+        product_link.append(item.get_attribute('href'))
+
+    # # try to find a way to the next page
+    # try:
+    #     next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
+    # except:
+    #     next_page = None
+
+
+def process_product(driver, link:str):
+    '''
+    Access it, get info of the object, go to the next
+    
+    Parameters:
+        driver: Web
+        link: str
+    '''
+    global products_data
     try:
         driver.get(link)
-    except ConnectionRefusedError as e:
-        print("I was unable to open the link: ", e)
+        driver.implicitly_wait(20)
+    except:
+        print("Could not get into object")
+        return
+
+    product_info = {'product_link': link}
+
+    try:
+        name = driver.find_element(By.CLASS_NAME, class_name).text
+        product_info['product_name'] = name
+    except:
+        product_info['product_name'] = ""
+
+    try:
+        price = driver.find_element(By.CLASS_NAME, class_price).text
+        product_info['product_price'] = price
+    except:
+        product_info['product_price'] = ""
+
+    try:
+        #Get elements from the table
+        th_elements = driver.find_elements(By.CLASS_NAME, class_th)
+        td_elements = driver.find_elements(By.CLASS_NAME, class_td)
+        th_texts = [elem.text for elem in th_elements]
+        td_texts = [elem.text for elem in td_elements]
+
+        try:
+            five_stars = (driver.find_element(By.CLASS_NAME, 'reviewCountTextLinkedHistogram.noUnderline')).get_attribute('title')
+        except:
+            five_stars = None
+
+        spec = {}
+        for th_text, td_text in zip(th_texts, td_texts):
+            if th_text == "Avaliações de clientes":
+                spec[th_text] = five_stars
+            elif th_text == "Ranking dos mais vendidos":
+                spec[th_text] = ""
+            else:
+                spec[th_text] = td_text
+        product_info['specs'] = spec
+    except Exception as e:
+        print("Error: ", e)
+        product_info['specs'] = {}
         
     try:
-        driver.implicitly_wait(5)
-        elem = driver.find_elements(By.CLASS_NAME,class_urls)
-        for url in elem: 
-            if url: urls.append(url.get_attribute("href"))
-    except RuntimeError as e:
-        print("I was unable to get the element: ", e)
+        marketing_claims = driver.find_element(By.XPATH,'//*[@id="productDescription"]/p/span/text()')
+    except:
+        marketing_claims = None
     finally:
-        driver.quit()
-    return urls
+        product_info['Marketing Claims'] = marketing_claims
+    products_data.append(product_info)
 
-def get_info(urls):
+
+def process_products(driver):
+    '''
+    For each object → process_product
+    '''
+    global product_link
+    for link in product_link:
+        process_product(driver, link)
+    product_link.clear()
+
+
+# Iniciar o scraping
+try:
+    driver.get(url)  # Go to the Website
+    driver.implicitly_wait(20)
+    # Find search bar
+    search = driver.find_element(By.CLASS_NAME, class_search_bar)
+    # Type: lavadora e secadora de roupas
+    search.send_keys(keywords)
+    # Find search button
+    time.sleep(1)
+    search_btn = driver.find_element(By.ID, class_submit_btn)
+    # Click on the search button
+    search_btn.click()
+    driver.implicitly_wait(5)
+    while True:
+        scrape_page(driver)
+        if next_page:
+            driver.get(next_page)
+        else:
+            break
+
+    process_products(driver)
+
+finally:
+    # Fechar o driver
+    driver.quit()
+
+    # Converter a lista de dicionários em um DataFrame
+    df = pd.DataFrame(products_data)
+    print(df)
+    df.to_csv('product_data.csv', index=False)
     
-    for url in urls:
-        machine = {}
-        machine['url'] = url
-        driver = webdriver.Chrome()
-        try:
-            driver.get(url)
-            time.sleep((2))
-        except ConnectionRefusedError as e:
-            print("I was unable to open the link: ", e)    
-        
-        try:
-            driver.implicitly_wait(5)
-            machine['model_description'] = (driver.find_element(By.CLASS_NAME, class_model_description)).text()
-            time.sleep(5)
-            machine['local_currency'] = (driver.find_element(By.CLASS_NAME, class_local_currency)).text()
-            time.sleep((4,5))
-            machine['price'] = (driver.find_element(By.CLASS_NAME, class_price)).text()
-            time.sleep((4))
-            machine['marketing_claims'] = (driver.find_element(By.CLASS_NAME, class_marketing_claims)).find_element((By.TAG_NAME,'span')).text()
-            time.sleep((3))
-            machine['price'] = driver.find_element((By.CLASS_NAME, class_price)).text()
-            time.sleep((1))
-            machine['5_Star'] = driver.find_element((By.CLASS_NAME, class_5_Star)).text()
-        except Exception as e:
-            print("Object not found, error message: ", e)
-        finally:
-            time.sleep((3))
-            driver.quit()
-            machines.append(machine)
-
-urls = get_links()
-get_info(urls)
-print(machines)
-
