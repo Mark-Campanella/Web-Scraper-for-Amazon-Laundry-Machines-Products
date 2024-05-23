@@ -17,37 +17,35 @@ keywords = "Lavadora e Secadoraa de Roupas"  # The topic you want to scrape, Mis
 class_search_bar = 'nav-input.nav-progressive-attribute'
 class_submit_btn = 'nav-search-submit-button'
 class_next_btn = 's-pagination-item.s-pagination-next.s-pagination-button.s-pagination-separator'
-class_go_page_1_btn = 's-pagination-item.s-pagination-button'
-
-# Filter Class
-class_range_lower_value = "a-section s-range-input-container s-lower-bound aok-relative"  # We want to change what's written on the valueText attribute
 
 # For each item
 class_itens = 's-result-item.s-asin'
 
 # URLs (they are analogs)
-class_urls = "a-link-normal.s-no-outline"
 class_link = 'a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal'
 
-# Item classes
-att_img = 'data-image-source-density'  # search by tag name
-class_local_currency = "a-price-symbol"
-class_price = "a-price-whole"
-class_5_Star = "a-icon-alt"
+# Item classes DEPRECATED 
+att_img = 'data-image-source-density'  # search by tag name --to do
+class_local_currency = "a-price-symbol" # Do we need this?
 
-# For these ones we would need to be inside the products page (NOT COUNTING FOR DEMO)
+
+
+# For these ones we would need to be inside the products page
 class_name = 'a-size-large.product-title-word-break'
+class_price = "a-price-whole"
 class_marketing_claims_div = "productDescription"
-class_model_description = "a-size-large.product-title-word-break"
+xpath_prod_description = '//*[@id="productDescription"]/p/span/text()' #the only one I am using XPATH because it was tooo hard to find it by class
+class_model_description = "a-size-large.product-title-word-break" #testign...
 class_th = "a-color-secondary.a-size-base.prodDetSectionEntry"
 class_td = 'a-size-base.prodDetAttrValue'
+class_5_Star = 'reviewCountTextLinkedHistogram.noUnderline'
 
 # Global Variables
 next_page = None
 product_link = []
 products_data = []
 
-# Driver Configuration
+# Driver Configuration - prioratazing safety and discretion (trying at least)
 chrome_options = Options()
 chrome_options.add_argument("--start-maximized")
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -57,11 +55,13 @@ chrome_options.add_argument("--disable-popup-blocking")
 chrome_options.add_argument("--incognito")
 chrome_options.add_argument("--disable-extensions")
 
+languages=["pt-BR", "pt"] 
+
 driver = webdriver.Chrome(options=chrome_options)
 
-# Aplicar o selenium-stealth
+# configure Selenium Stealth
 stealth(driver,
-        languages=["pt-BR", "pt"],
+        languages,
         vendor="Google Inc.",
         platform="Win32",
         webgl_vendor="Intel Inc.",
@@ -131,7 +131,7 @@ def process_product(driver, link:str):
         td_texts = [elem.text for elem in td_elements]
 
         try:
-            five_stars = (driver.find_element(By.CLASS_NAME, 'reviewCountTextLinkedHistogram.noUnderline')).get_attribute('title')
+            five_stars = (driver.find_element(By.CLASS_NAME,class_5_Star)).get_attribute('title')
         except:
             five_stars = None
 
@@ -149,7 +149,7 @@ def process_product(driver, link:str):
         product_info['specs'] = {}
         
     try:
-        marketing_claims = driver.find_element(By.XPATH,'//*[@id="productDescription"]/p/span/text()')
+        marketing_claims = driver.find_element(By.XPATH,)
     except:
         marketing_claims = None
     finally:
