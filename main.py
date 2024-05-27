@@ -38,9 +38,8 @@ class_local_currency = "a-price-symbol"
 # What to get from each object
 class_name = 'a-size-large.product-title-word-break'
 class_price = "a-price-whole"
-class_marketing_claims_div = "productDescription"
-xpath_prod_description = '//*[@id="productDescription"]/p/span/text()'
-xpath_img_1 = ''
+id_description = 'productDescription'
+id_img = 'imgTagWrapperId'
 class_th = "a-color-secondary.a-size-base.prodDetSectionEntry"
 class_td = 'a-size-base.prodDetAttrValue'
 class_5_Star = 'reviewCountTextLinkedHistogram.noUnderline'
@@ -113,7 +112,7 @@ def scrape_page(driver:webdriver):
         item = element.find_element(By.CLASS_NAME, class_link)
         product_link.append(item.get_attribute('href'))
 
-    # Uncomment after testing:
+    ## Uncomment after testing // Comment for testing (time and processment):
     # try:
     #     next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
     # except:
@@ -136,17 +135,17 @@ def process_product(driver:webdriver, link:str):
     driver.get(link) #Go to the object's page
     driver.implicitly_wait(20) #Wait the page to load
 
-    product_info = {'product_link': link} #append it's link in the dictionary
+    product_info = {'Link': link} #append it's link in the dictionary
 
     try:
         name = driver.find_element(By.CLASS_NAME, class_name).text 
-        product_info['product_name'] = name #append it's name in the dictionary      
-    except: product_info['product_name'] = ""
+        product_info['Name'] = name #append it's name in the dictionary      
+    except: product_info['Name'] = ""
 
     try:
         price = driver.find_element(By.CLASS_NAME, class_price).text
-        product_info['product_price'] = price #append it's price in the dictionary (integer only)    
-    except: product_info['product_price'] = ""
+        product_info['Price'] = price #append it's price in the dictionary (integer only)    
+    except: product_info['Price'] = ""
         
     #For this one, there is a table, so I am gathering all elements, the Table Headers (th) and the Table Data (td)
     #I'm storing them in two lists
@@ -168,12 +167,15 @@ def process_product(driver:webdriver, link:str):
                 
     except Exception as e: print("Error: ", e)
         
-   #this one is not working properly, should get the description     
-    try: description = driver.find_elements(By.CLASS_NAME,xpath_prod_description).text
-        
+   #Get the item's description if there is one   
+    try: description = driver.find_element(By.ID, id_description).find_element(By.TAG_NAME,'span').text
     except: description = None
-        
     finally: product_info["Description"] = description
+    
+    #Get the item's img if there is one
+    try: img = driver.find_element(By.ID, id_img).find_element(By.TAG_NAME,'img').get_attribute('src')
+    except: img = None
+    finally: product_info["Image Link"] = img
     
     products_data.append(product_info)#Add item in the list of items
 
@@ -223,4 +225,10 @@ finally:
     # Convert the list of dictionaries into a csv, printing top 5 items for checking
     df = pd.DataFrame(products_data)
     print(df.head())
+    
+    # Convert price to numeric
+    df['Price'] = pd.to_numeric(df['Price'])
+
+    # Make a price Threshold, getting out most of the unwanted items
+    df = df[df["Price"] > 300]
     df.to_csv('product_data.csv', index=False)
