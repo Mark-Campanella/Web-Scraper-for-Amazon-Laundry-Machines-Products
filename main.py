@@ -43,6 +43,7 @@ id_img = 'imgTagWrapperId'
 class_th = "a-color-secondary.a-size-base.prodDetSectionEntry"
 class_td = 'a-size-base.prodDetAttrValue'
 class_5_Star = 'reviewCountTextLinkedHistogram.noUnderline'
+id_review_counts = 'acrCustomerReviewText'
 # -------------------------------------------------------------------------------------------------------------------#
 # -------------------------------------------------------------------------------------------------------------------#
 
@@ -112,11 +113,11 @@ def scrape_page(driver:webdriver):
         item = element.find_element(By.CLASS_NAME, class_link)
         product_link.append(item.get_attribute('href'))
 
-    ## Uncomment after testing // Comment for testing (time and processment):
-    # try:
-    #     next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
-    # except:
-    #     next_page = None
+    # Uncomment after testing // Comment for testing (time and processment):
+    try:
+        next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
+    except:
+        next_page = None
 
 def process_product(driver:webdriver, link:str):
     '''
@@ -166,6 +167,10 @@ def process_product(driver:webdriver, link:str):
             else: product_info[th_text] = td_text
                 
     except Exception as e: print("Error: ", e)
+    
+    try: review_counts = driver.find_element(By.ID, id_review_counts).text
+    except: review_counts = None
+    finally: product_info['Review Count'] = review_counts
         
    #Get the item's description if there is one   
     try: description = driver.find_element(By.ID, id_description).find_element(By.TAG_NAME,'span').text
@@ -222,13 +227,27 @@ finally:
     #Close google
     driver.quit()
 
-    # Convert the list of dictionaries into a csv, printing top 5 items for checking
-    df = pd.DataFrame(products_data)
-    print(df.head())
-    
-    # Convert price to numeric
-    df['Price'] = pd.to_numeric(df['Price'])
+#-------------------------------------------- Dataframe Manipulation before storing in a CSV -------------------------------------------------#
+#-This is for laundry products, comment the function calling or change this section for other products and other regions ---------------------#
 
-    # Make a price Threshold, getting out most of the unwanted items
-    df = df[df["Price"] > 300]
-    df.to_csv('product_data.csv', index=False)
+    # Convert the list of dictionaries into a dataframe, printing top 5 items for checking
+    df = pd.DataFrame(products_data)
+    print(df.head(20))
+    
+    def manipulation(df:pd.DataFrame):
+        df['Nome da marca'] = df['Nome da marca'].fillna(df['Marca'])
+        df['Nome da marca'] = df['Nome da marca'].fillna(df['Fabricante'])   
+        #Setting all Nome da Marca as lowercase 
+        df['Nome da marca'] = df['Nome da marca'].str.lower()
+        # Remove substrings that we don't need
+        df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(' de 5 estrelas', '', regex=False)
+        df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
+        df['Price'] = df['Price'].str.replace('.','',regex=False)
+        df['Price'] = df['Price'].astype(int)
+        df = df[df['Price'] > 300]
+    try:
+        manipulation(df)
+    except Exception as e: 
+        print(f"Not able to manipulate the dataframe because of: {e}, converting it to csv...")
+    finally:
+        df.to_csv('product_data.csv', index=False)
