@@ -12,7 +12,9 @@ import pandas as pd
 
 #Where
 url = "https://www.amazon.com.br"
-
+#if you are scraping from outside of the target country,
+    #please be aware that you need the zipcode and the logic to insert it
+    
 #What
 keywords = "Lavadora e Secadoraa de Roupas"
 
@@ -242,9 +244,9 @@ finally:
         # Remove substrings that we don't need
         df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(' de 5 estrelas', '', regex=False)
         df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
+        #Brazilian pattern for price is getting in the way so I am changing them to USA format
         df['Price'] = df['Price'].str.replace('.','',regex=False)
-        df['Price'] = df['Price'].astype(int)
-        df = df[df['Price'] > 300]
+        df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(',','.',regex=False)
     try:
         manipulation(df)
     except Exception as e: 
