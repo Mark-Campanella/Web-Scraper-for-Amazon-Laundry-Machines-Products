@@ -246,6 +246,7 @@ finally:
         df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
         #Brazilian pattern for price is getting in the way so I am changing them to USA format
         df['Price'] = df['Price'].str.replace('.','',regex=False)
+        df['Review Count'] = df['Review Count'].str.replace('.','',regex=False)
         df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(',','.',regex=False)
     try:
         manipulation(df)
