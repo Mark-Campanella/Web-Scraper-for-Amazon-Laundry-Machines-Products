@@ -232,25 +232,25 @@ finally:
 #-------------------------------------------- Dataframe Manipulation before storing in a CSV -------------------------------------------------#
 #-This is for laundry products, comment the function calling or change this section for other products and other regions ---------------------#
 
-    # Convert the list of dictionaries into a dataframe, printing top 5 items for checking
-    df = pd.DataFrame(products_data)
-    print(df.head(20))
-    
-    def manipulation(df:pd.DataFrame):
-        df['Nome da marca'] = df['Nome da marca'].fillna(df['Marca'])
-        df['Nome da marca'] = df['Nome da marca'].fillna(df['Fabricante'])   
-        #Setting all Nome da Marca as lowercase 
-        df['Nome da marca'] = df['Nome da marca'].str.lower()
-        # Remove substrings that we don't need
-        df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(' de 5 estrelas', '', regex=False)
-        df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
-        #Brazilian pattern for price is getting in the way so I am changing them to USA format
-        df['Price'] = df['Price'].str.replace('.','',regex=False)
-        df['Review Count'] = df['Review Count'].str.replace('.','',regex=False)
-        df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(',','.',regex=False)
-    try:
-        manipulation(df)
-    except Exception as e: 
-        print(f"Not able to manipulate the dataframe because of: {e}, converting it to csv...")
-    finally:
-        df.to_csv('product_data.csv', index=False)
+# Convert the list of dictionaries into a dataframe, printing top 5 items for checking
+df = pd.DataFrame(products_data)
+print(df.head(20))
+
+def manipulation(df:pd.DataFrame):
+    df['Nome da marca'] = df['Nome da marca'].fillna(df['Marca'])
+    df['Nome da marca'] = df['Nome da marca'].fillna(df['Fabricante'])   
+    #Setting all Nome da Marca as lowercase 
+    df['Nome da marca'] = df['Nome da marca'].str.lower()
+    # Remove substrings that we don't need
+    df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(' de 5 estrelas', '', regex=False)
+    df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
+    #Brazilian pattern for price is getting in the way so I am changing them to USA format
+    df['Price'] = df['Price'].str.replace('.','',regex=False)
+    df['Review Count'] = df['Review Count'].str.replace('.','',regex=False)
+    df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(',','.',regex=False)
+try:
+    manipulation(df)
+except Exception as e: 
+    print(f"Not able to manipulate the dataframe because of: {e}, converting it to csv...")
+finally:
+    df.to_csv('product_data.csv', index=False)
