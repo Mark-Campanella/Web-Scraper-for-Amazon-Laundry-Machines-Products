@@ -1,22 +1,58 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium_stealth import stealth
 import pandas as pd
+
 # -------------------------------------------------------------------------------------------------------------------#
-# -----------------------------------------Customization Variables---------------------------------------------------#
+# Driver Configuration - prioratazing safety and discretion (trying at least)
+# -------------------------------------------------------------------------------------------------------------------#
+chrome_options = Options()
+chrome_options.add_argument("--start-maximized")
+chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+chrome_options.add_argument("--disable-geolocation")
+chrome_options.add_argument("--disable-notifications")
+chrome_options.add_argument("--disable-popup-blocking")
+chrome_options.add_argument("--incognito")
+chrome_options.add_argument("--disable-extensions")
+driver = webdriver.Chrome(options=chrome_options)
+# -------------------------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------------------------#
+# configure Selenium Stealth
+# -------------------------------------------------------------------------------------------------------------------#
+stealth(driver,
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True)
+# -------------------------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------------------------#
+# -----------------------------------------Customizable Variables---------------------------------------------------#
 # -------------------------------------------------------------------------------------------------------------------#
 
 #Where
-url = "https://www.amazon.com.br"
+url = "https://www.amazon.com" #Insert the link to your region's Amazon!
+
 #if you are scraping from outside of the target country,
     #please be aware that you need the zipcode and the logic to insert it
-    
-#What
-keywords = "Lavadora e Secadoraa de Roupas"
+zip_code_USA = 19947 
+you_need_to_change_location = True #Change here if it is not needed!
+   
+#What to scrape
+keywords = "Washer Machines and Dryers"
+
+#If you change the place/language, please take a look at this! And change what is required!
+txt_th_5star = "Customer Reviews" #"Avaliações de Clientes"
+txt_th_ignore = "Best Sellers Rank" #"Ranking dos mais vendidos"
+# -------------------------------------------------------------------------------------------------------------------#
 
 # -------------------------------------------------------------------------------------------------------------------#
 #JUST TO CHANGE IF THERE IS A CHANGE IN THE AMAZON WEBSITE  
@@ -50,11 +86,6 @@ id_review_counts = 'acrCustomerReviewText'
 # -------------------------------------------------------------------------------------------------------------------#
 
 # -------------------------------------------------------------------------------------------------------------------#
-#If you change the place/language, please take a look at this! And change what is required!
-txt_th_5star = "Avaliações de clientes"
-txt_th_ignore = "Ranking dos mais vendidos"
-# -------------------------------------------------------------------------------------------------------------------#
-
 # -------------------------------------------------------------------------------------------------------------------#
 # Global Variables
 next_page = None
@@ -62,36 +93,40 @@ product_link = []
 products_data = []
 # -------------------------------------------------------------------------------------------------------------------#
 
-# -------------------------------------------------------------------------------------------------------------------#
-# Driver Configuration - prioratazing safety and discretion (trying at least)
-# -------------------------------------------------------------------------------------------------------------------#
-chrome_options = Options()
-chrome_options.add_argument("--start-maximized")
-chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-chrome_options.add_argument("--disable-geolocation")
-chrome_options.add_argument("--disable-notifications")
-chrome_options.add_argument("--disable-popup-blocking")
-chrome_options.add_argument("--incognito")
-chrome_options.add_argument("--disable-extensions")
-languages = ["pt-BR", "pt"] #In case of going for the USA/UK or anywhere, CHANGE THIS
-driver = webdriver.Chrome(options=chrome_options)
-# -------------------------------------------------------------------------------------------------------------------#
-
-# -------------------------------------------------------------------------------------------------------------------#
-# configure Selenium Stealth
-# -------------------------------------------------------------------------------------------------------------------#
-stealth(driver,
-        languages=languages,
-        vendor="Google Inc.",
-        platform="Win32",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True)
-# -------------------------------------------------------------------------------------------------------------------#
 
 # -------------------------------------------------------------------------------------------------------------------#
 #----------------------------------------------------FUNCTIONS-------------------------------------------------------#
 # -------------------------------------------------------------------------------------------------------------------#
+
+def location_changer():
+    # Wait for the location icon to be present and click it
+    WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.ID, "nav-packard-glow-loc-icon"))
+    )
+    driver.find_element(By.ID, "nav-packard-glow-loc-icon").click()
+
+    # Wait for the ZIP input field to be present and send ZIP code
+    WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.ID, "GLUXZipUpdateInput"))
+    )
+    zip_input = driver.find_element(By.ID, "GLUXZipUpdateInput")
+    zip_input.send_keys(zip_code_USA, Keys.ENTER)  # Replace with your target ZIP code
+
+    # Send Enter key using send_keys method
+    zip_input.send_keys(Keys.ENTER)
+
+    # Optional: Use JavaScript to trigger Enter key event
+    driver.execute_script(
+        "arguments[0].dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'}));", zip_input
+    )
+
+    # Optional: Use ActionChains to send Enter key
+    actions = ActionChains(driver)
+    actions.send_keys(Keys.ENTER).perform()
+
+    # Adding a sleep to ensure actions are completed (optional, use WebDriverWait for better handling)
+    time.sleep(5)
+                        
 
 def scrape_page(driver:webdriver):
     '''
@@ -116,10 +151,10 @@ def scrape_page(driver:webdriver):
         product_link.append(item.get_attribute('href'))
 
     # Uncomment after testing // Comment for testing (time and processment):
-    try:
-        next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
-    except:
-        next_page = None
+    # try:
+    #     next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
+    # except:
+    #     next_page = None
 
 def process_product(driver:webdriver, link:str):
     '''
@@ -202,7 +237,8 @@ def process_products(driver:webdriver):
 try:
     driver.get(url) #Go to the website
     driver.implicitly_wait(20)#Wait for it to load
-    
+    if you_need_to_change_location:
+        location_changer()
     search = driver.find_element(By.CLASS_NAME, class_search_bar)#go to the search bar
     search.send_keys(keywords)#type the keywords
     time.sleep(1)#take a breath
@@ -229,28 +265,10 @@ finally:
     #Close google
     driver.quit()
 
-#-------------------------------------------- Dataframe Manipulation before storing in a CSV -------------------------------------------------#
-#-This is for laundry products, comment the function calling or change this section for other products and other regions ---------------------#
+#-----------------------------------------------------------Storing in a CSV -----------------------------------------------------------------#
+#---------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Convert the list of dictionaries into a dataframe, printing top 5 items for checking
 df = pd.DataFrame(products_data)
 print(df.head(20))
-
-def manipulation(df:pd.DataFrame):
-    df['Nome da marca'] = df['Nome da marca'].fillna(df['Marca'])
-    df['Nome da marca'] = df['Nome da marca'].fillna(df['Fabricante'])   
-    #Setting all Nome da Marca as lowercase 
-    df['Nome da marca'] = df['Nome da marca'].str.lower()
-    # Remove substrings that we don't need
-    df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(' de 5 estrelas', '', regex=False)
-    df['Review Count'] = df['Review Count'].str.replace(' avaliações de clientes', '', regex=False)
-    #Brazilian pattern for price is getting in the way so I am changing them to USA format
-    df['Price'] = df['Price'].str.replace('.','',regex=False)
-    df['Review Count'] = df['Review Count'].str.replace('.','',regex=False)
-    df['Avaliações de clientes'] = df['Avaliações de clientes'].str.replace(',','.',regex=False)
-try:
-    manipulation(df)
-except Exception as e: 
-    print(f"Not able to manipulate the dataframe because of: {e}, converting it to csv...")
-finally:
-    df.to_csv('product_data.csv', index=False)
+df.to_csv('product_data.csv', index=False)
