@@ -151,10 +151,10 @@ def scrape_page(driver:webdriver):
         product_link.append(item.get_attribute('href'))
 
     # Uncomment after testing // Comment for testing (time and processment):
-    # try:
-    #     next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
-    # except:
-    #     next_page = None
+    try:
+        next_page = driver.find_element(By.CLASS_NAME, class_next_btn).get_attribute("href")
+    except:
+        next_page = None
 
 def process_product(driver:webdriver, link:str):
     '''
