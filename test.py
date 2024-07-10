@@ -10,7 +10,7 @@ from selenium.webdriver.common.keys import Keys
 import pandas as pd
 
 my_location = "Brazil"
-zip_code = 19947
+zip_code_USA = 19947
 
 chrome_options = Options()
 chrome_options.add_argument("--start-maximized")
@@ -47,7 +47,7 @@ if location == my_location:
         EC.presence_of_element_located((By.ID, "GLUXZipUpdateInput"))
     )
     zip_input = driver.find_element(By.ID, "GLUXZipUpdateInput")
-    zip_input.send_keys(zip_code, Keys.ENTER)  # Replace with your actual ZIP code
+    zip_input.send_keys(zip_code_USA, Keys.ENTER)  # Replace with your actual ZIP code
 
     # Send Enter key using send_keys method
     zip_input.send_keys(Keys.ENTER)
