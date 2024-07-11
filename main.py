@@ -44,6 +44,10 @@ url = "https://www.amazon.com" #Insert the link to your region's Amazon!
 #if you are scraping from outside of the target country,
     #please be aware that you need the zipcode and the logic to insert it
 zip_code_USA = 19947 
+zip_code_MXC = "01000"
+zip_code_India = "400001"
+
+
 you_need_to_change_location = True #Change here if it is not needed!
    
 #What to scrape
