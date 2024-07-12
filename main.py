@@ -38,24 +38,82 @@ stealth(driver,
 # -----------------------------------------Customizable Variables---------------------------------------------------#
 # -------------------------------------------------------------------------------------------------------------------#
 
-#Where
-url = "https://www.amazon.com" #Insert the link to your region's Amazon!
+#Links
+url_USA = "https://www.amazon.com" 
+url_MXC = "https://www.amazon.com.mx" 
+url_India = "https://www.amazon.in" 
+url_BR = "https://www.amazon.com.br" 
 
-#if you are scraping from outside of the target country,
-    #please be aware that you need the zipcode and the logic to insert it
-zip_code_USA = 19947 
+#Zip codes
+zip_code_USA = "19947" 
 zip_code_MXC = "01000"
 zip_code_India = "400001"
+zip_code_BR = "13500600"
 
-
-you_need_to_change_location = True #Change here if it is not needed!
-   
 #What to scrape
-keywords = "Washer Machines and Dryers"
+keywords_USA = "Washer Machines and Dryers"
+keywords_MXC = "lavadoras y secadoras"
+keywords_India = "Washer Machines and Dryers"
+keywords_BR = "Lavadoras e Secadoras de Roupas"
 
-#If you change the place/language, please take a look at this! And change what is required!
-txt_th_5star = "Customer Reviews" #"Avaliações de Clientes"
-txt_th_ignore = "Best Sellers Rank" #"Ranking dos mais vendidos"
+
+#Small Data treatment
+txt_th_5star_USA = "Customer Reviews" 
+txt_th_ignore_USA = "Best Sellers Rank" 
+
+txt_th_5star_MXC = "Opinión media de los clientes" 
+txt_th_ignore_MXC = "Clasificación en los más vendidos de Amazon" 
+
+txt_th_5star_India = "Customer Reviews"
+txt_th_ignore_India = "Best Sellers Rank"
+
+txt_th_5star_BR = "Avaliações de Clientes"
+txt_th_ignore_BR = "Ranking dos mais vendidos"
+   
+
+zip_code = None
+url = None
+keywords = None
+txt_th_5star = None
+txt_th_ignore = None
+
+target_country = input("Where is your target country to scrape?")
+match target_country:
+    
+    case "USA":
+        zip_code = zip_code_USA
+        url = url_USA
+        keywords = keywords_USA
+        txt_th_5star = txt_th_5star_USA
+        txt_th_ignore = txt_th_ignore_USA
+        
+    case "MX":
+        zip_code = zip_code_MXC
+        url = url_MXC
+        keywords = keywords_MXC
+        txt_th_5star = txt_th_5star_MXC
+        txt_th_ignore = txt_th_ignore_MXC
+        
+    case "India":
+        zip_code = zip_code_India
+        url = url_India
+        keywords = keywords_India
+        txt_th_5star = txt_th_5star_India
+        txt_th_ignore = txt_th_ignore_India
+        
+    case "BR":
+        zip_code = zip_code_BR
+        url = url_BR
+        keywords = keywords_BR
+        txt_th_5star = txt_th_5star_BR
+        txt_th_ignore = txt_th_ignore_BR        
+
+you_need_to_change_location = input("Are you scraping inside the target country or using VPN that points to it? (Yes/No)")
+match you_need_to_change_location:
+    case "Yes": you_need_to_change_location = False
+    case "No": you_need_to_change_location = True
+
+
 # -------------------------------------------------------------------------------------------------------------------#
 
 # -------------------------------------------------------------------------------------------------------------------#
@@ -114,7 +172,7 @@ def location_changer():
         EC.presence_of_element_located((By.ID, "GLUXZipUpdateInput"))
     )
     zip_input = driver.find_element(By.ID, "GLUXZipUpdateInput")
-    zip_input.send_keys(zip_code_USA, Keys.ENTER)  # Replace with your target ZIP code
+    zip_input.send_keys(zip_code, Keys.ENTER)  # Replace with your target ZIP code
 
     # Send Enter key using send_keys method
     zip_input.send_keys(Keys.ENTER)
