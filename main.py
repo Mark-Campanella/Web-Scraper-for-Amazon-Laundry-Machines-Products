@@ -77,7 +77,7 @@ keywords = None
 txt_th_5star = None
 txt_th_ignore = None
 
-target_country = input("Where is your target country to scrape?")
+target_country = input("Where is your target country to scrape? (USA / MX / India / BR)")
 match target_country:
     
     case "USA":
